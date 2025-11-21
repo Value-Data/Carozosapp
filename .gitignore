@@ -1,0 +1,33 @@
+# Entorno virtual
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Archivos de prueba (opcional - descomenta si no quieres incluirlos)
+# test_*.py
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+*.tmp
+*.log
+.DS_Store
+
+# Archivos Excel temporales (si los generas en runtime)
+# *_temp.xlsx
+# *_output.xlsx
+
