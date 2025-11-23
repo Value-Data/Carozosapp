@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """Funciones auxiliares comunes"""
 
-import pandas as pd
-import numpy as np
-import unicodedata
 import re
+import unicodedata
+
+import pandas as pd
 
 
 def norm(s):
@@ -19,8 +18,7 @@ def norm_cols(df):
 
 
 def canon(s: str) -> str:
-    """
-    Canonicaliza string para comparación.
+    """Canonicaliza string para comparación.
     Normaliza unicode, quita acentos, espacios, guiones, etc.
     """
     s = unicodedata.normalize("NFKD", str(s))
@@ -30,8 +28,7 @@ def canon(s: str) -> str:
 
 
 def pick_col(df, candidates):
-    """
-    Busca una columna en el dataframe usando nombres canónicos.
+    """Busca una columna en el dataframe usando nombres canónicos.
     Intenta coincidencias exactas primero, luego parciales.
     """
     cmap = {canon(c): c for c in df.columns}
@@ -43,39 +40,41 @@ def pick_col(df, candidates):
     for c in df.columns:
         if any(canon(cand) in canon(c) for cand in candidates):
             return c
-    raise KeyError(f"No se encontró ninguna de {candidates}. Columnas disponibles: {list(df.columns)}")
+    raise KeyError(
+        f"No se encontró ninguna de {candidates}. Columnas disponibles: {list(df.columns)}",
+    )
 
 
 def pct_to_fraction(x) -> float:
-    """
-    Convierte porcentaje a fracción.
+    """Convierte porcentaje a fracción.
     '96,6%' -> 0.966 ; '96.6' -> 0.966 ; 0.966 -> 0.966
     """
     if pd.isna(x):
         return 0.0
-    s = str(x).strip().replace('%', '').replace(',', '.')
+    s = str(x).strip().replace("%", "").replace(",", ".")
     try:
         v = float(s)
     except Exception:
-        v = pd.to_numeric(x, errors='coerce')
+        v = pd.to_numeric(x, errors="coerce")
         if pd.isna(v):
             return 0.0
-    return v/100.0 if v > 1.0 else v
+    return v / 100.0 if v > 1.0 else v
 
 
 def to_num_series(ser: pd.Series) -> pd.Series:
     """Convierte serie a numérica, limpiando formato."""
-    return (ser.astype(str)
-            .str.replace("%", "", regex=False)
-            .str.replace(",", ".", regex=False)
-            .str.replace("\xa0", "", regex=False)
-            .str.replace(r"[^0-9\.\-]", "", regex=True)
-            .pipe(pd.to_numeric, errors="coerce"))
+    return (
+        ser.astype(str)
+        .str.replace("%", "", regex=False)
+        .str.replace(",", ".", regex=False)
+        .str.replace("\xa0", "", regex=False)
+        .str.replace(r"[^0-9\.\-]", "", regex=True)
+        .pipe(pd.to_numeric, errors="coerce")
+    )
 
 
 def normalize_bounds(inf, sup):
-    """
-    Normaliza límites: devuelve (lo, hi) donde lo<=hi.
+    """Normaliza límites: devuelve (lo, hi) donde lo<=hi.
     Trata 0/NaN como 'sin restricción'.
     """
     lo = None if (pd.isna(inf) or float(inf) == 0.0) else float(inf)
@@ -96,4 +95,3 @@ def parse_calibre_cols(cols):
             if m:
                 cal_map[c] = int(m.group(1))
     return cal_map
-
