@@ -31,3 +31,9 @@ __pycache__/
 # *_temp.xlsx
 # *_output.xlsx
 
+.venv/
+*.env
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.py.tmp.*
