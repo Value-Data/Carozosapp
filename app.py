@@ -324,6 +324,65 @@ with tab4:
         if 'ediciones_clusters_mc' not in st.session_state:
             st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
         
+        # Inicializar flags de reset
+        if 'reset_tol_flag' not in st.session_state:
+            st.session_state.reset_tol_flag = False
+        if 'reset_mc_flag' not in st.session_state:
+            st.session_state.reset_mc_flag = False
+        if 'reset_all_flag' not in st.session_state:
+            st.session_state.reset_all_flag = False
+        
+        # Inicializar contadores de reset (fuerzan nuevo editor con key diferente)
+        if 'reset_counter_tol' not in st.session_state:
+            st.session_state.reset_counter_tol = 0
+        if 'reset_counter_mc' not in st.session_state:
+            st.session_state.reset_counter_mc = 0
+        if 'reset_counter_all' not in st.session_state:
+            st.session_state.reset_counter_all = 0
+        
+        # Procesar resets ANTES de mostrar los editores
+        # Usar contadores para cambiar el key del editor y forzar recreación
+        if st.session_state.get('reset_tol_flag', False):
+            st.session_state.ediciones_tol_sug_mono = clusters['tol_sug_mono'].copy()
+            # Incrementar contador para cambiar el key del editor
+            st.session_state.reset_counter_tol += 1
+            # Limpiar TODOS los keys relacionados con el editor
+            keys_to_delete = [k for k in list(st.session_state.keys()) 
+                            if 'editor_tol_sug_mono' in str(k)]
+            for key in keys_to_delete:
+                del st.session_state[key]
+            st.session_state.reset_tol_flag = False
+            st.rerun()
+        
+        if st.session_state.get('reset_mc_flag', False):
+            st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
+            # Incrementar contador para cambiar el key del editor
+            st.session_state.reset_counter_mc += 1
+            # Limpiar TODOS los keys relacionados con el editor
+            keys_to_delete = [k for k in list(st.session_state.keys()) 
+                            if 'editor_clusters_mc' in str(k)]
+            for key in keys_to_delete:
+                del st.session_state[key]
+            st.session_state.reset_mc_flag = False
+            st.rerun()
+        
+        if st.session_state.get('reset_all_flag', False):
+            st.session_state.ediciones_tol_sug_mono = clusters['tol_sug_mono'].copy()
+            st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
+            # Incrementar contadores
+            st.session_state.reset_counter_tol += 1
+            st.session_state.reset_counter_mc += 1
+            st.session_state.reset_counter_all += 1
+            # Limpiar TODOS los keys relacionados
+            keys_to_delete_tol = [k for k in list(st.session_state.keys()) 
+                                 if 'editor_tol_sug_mono' in str(k)]
+            keys_to_delete_mc = [k for k in list(st.session_state.keys()) 
+                                if 'editor_clusters_mc' in str(k)]
+            for key in keys_to_delete_tol + keys_to_delete_mc:
+                del st.session_state[key]
+            st.session_state.reset_all_flag = False
+            st.rerun()
+        
         # Información contextual
         st.info("💡 **Instrucciones:** Edita las tablas directamente haciendo clic en las celdas. Las columnas de identificación (VARIABLE, MERCADO-CLIENTE) no son editables. Usa el botón 'Resetear' para volver a los valores originales.")
         
@@ -354,13 +413,14 @@ with tab4:
                         help=f"Valor de tolerancia para {col}"
                     )
             
-            # Editor de datos
+            # Editor de datos con key dinámico (cambia en cada reset para forzar recreación)
+            editor_key_tol = f"editor_tol_sug_mono_{st.session_state.reset_counter_tol}"
             edited_tol = st.data_editor(
                 st.session_state.ediciones_tol_sug_mono,
                 column_config=column_config,
                 use_container_width=True,
                 num_rows="fixed",
-                key="editor_tol_sug_mono"
+                key=editor_key_tol
             )
             
             # Actualizar session state con ediciones
@@ -370,8 +430,7 @@ with tab4:
             col_reset1, col_space1 = st.columns([1, 3])
             with col_reset1:
                 if st.button("🔄 Resetear Tolerancias", key="reset_tol"):
-                    st.session_state.ediciones_tol_sug_mono = clusters['tol_sug_mono'].copy()
-                    st.success("✅ Tolerancias reseteadas a valores originales")
+                    st.session_state.reset_tol_flag = True
                     st.rerun()
         
         # TAB INTERNO 2: Asignación de Clusters
@@ -412,13 +471,14 @@ with tab4:
                         help=f"Columna {col}"
                     )
             
-            # Editor de datos
+            # Editor de datos con key dinámico (cambia en cada reset para forzar recreación)
+            editor_key_mc = f"editor_clusters_mc_{st.session_state.reset_counter_mc}"
             edited_mc = st.data_editor(
                 st.session_state.ediciones_clusters_mc,
                 column_config=column_config_mc,
                 use_container_width=True,
                 num_rows="fixed",
-                key="editor_clusters_mc"
+                key=editor_key_mc
             )
             
             # Actualizar session state con ediciones
@@ -428,8 +488,7 @@ with tab4:
             col_reset2, col_space2 = st.columns([1, 3])
             with col_reset2:
                 if st.button("🔄 Resetear Asignaciones", key="reset_mc"):
-                    st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
-                    st.success("✅ Asignaciones reseteadas a valores originales")
+                    st.session_state.reset_mc_flag = True
                     st.rerun()
         
         st.markdown("---")
@@ -477,8 +536,6 @@ with tab4:
         col_reset_global, col_space_global = st.columns([1, 4])
         with col_reset_global:
             if st.button("🔄 Resetear Todo a Valores Originales", type="secondary", key="reset_all"):
-                st.session_state.ediciones_tol_sug_mono = clusters['tol_sug_mono'].copy()
-                st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
-                st.success("✅ Todas las ediciones han sido reseteadas")
+                st.session_state.reset_all_flag = True
                 st.rerun()
 
