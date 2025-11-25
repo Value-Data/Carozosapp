@@ -54,7 +54,7 @@ with st.sidebar:
     st.markdown("**Desarrollado por:** Carozosapp Team")
 
 # Pestañas principales
-tab1, tab2, tab3 = st.tabs(["📥 Carga de Datos", "⚙️ Configuración", "📊 Resultados"])
+tab1, tab2, tab3, tab4 = st.tabs(["📥 Carga de Datos", "⚙️ Configuración", "📊 Resultados", "✏️ Edición"])
 
 # TAB 1: Carga de Datos
 with tab1:
@@ -306,4 +306,179 @@ with tab3:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
+
+# TAB 4: Edición
+with tab4:
+    st.header("✏️ Edición de Tolerancias y Asignaciones")
+    
+    if st.session_state.resultados is None:
+        st.info("ℹ️ No hay resultados disponibles. Por favor, realice el análisis en la pestaña 'Configuración'.")
+    else:
+        resultados = st.session_state.resultados
+        clusters = resultados['clusters']
+        
+        # Inicializar session state para ediciones si no existen
+        if 'ediciones_tol_sug_mono' not in st.session_state:
+            st.session_state.ediciones_tol_sug_mono = clusters['tol_sug_mono'].copy()
+        
+        if 'ediciones_clusters_mc' not in st.session_state:
+            st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
+        
+        # Información contextual
+        st.info("💡 **Instrucciones:** Edita las tablas directamente haciendo clic en las celdas. Las columnas de identificación (VARIABLE, MERCADO-CLIENTE) no son editables. Usa el botón 'Resetear' para volver a los valores originales.")
+        
+        st.markdown("---")
+        
+        # Tabs internos para separar las dos tablas
+        tab_tol, tab_clusters = st.tabs(["📊 Tolerancias Sugeridas Monotónicas", "👥 Asignación de Clusters"])
+        
+        # TAB INTERNO 1: Tolerancias Sugeridas Monotónicas
+        with tab_tol:
+            st.subheader("Tolerancias Sugeridas Monotónicas")
+            st.markdown("Edita los valores de tolerancias por cluster. La columna **VARIABLE** no es editable.")
+            
+            # Configurar columnas editables (todas excepto VARIABLE)
+            column_config = {}
+            col_names = st.session_state.ediciones_tol_sug_mono.columns.tolist()
+            for col in col_names:
+                if col == "VARIABLE":
+                    column_config[col] = st.column_config.TextColumn(
+                        col,
+                        disabled=True,
+                        help="Nombre de la variable (no editable)"
+                    )
+                else:
+                    column_config[col] = st.column_config.NumberColumn(
+                        col,
+                        format="%.2f",
+                        help=f"Valor de tolerancia para {col}"
+                    )
+            
+            # Editor de datos
+            edited_tol = st.data_editor(
+                st.session_state.ediciones_tol_sug_mono,
+                column_config=column_config,
+                use_container_width=True,
+                num_rows="fixed",
+                key="editor_tol_sug_mono"
+            )
+            
+            # Actualizar session state con ediciones
+            st.session_state.ediciones_tol_sug_mono = edited_tol
+            
+            # Botón de reset para esta tabla
+            col_reset1, col_space1 = st.columns([1, 3])
+            with col_reset1:
+                if st.button("🔄 Resetear Tolerancias", key="reset_tol"):
+                    st.session_state.ediciones_tol_sug_mono = clusters['tol_sug_mono'].copy()
+                    st.success("✅ Tolerancias reseteadas a valores originales")
+                    st.rerun()
+        
+        # TAB INTERNO 2: Asignación de Clusters
+        with tab_clusters:
+            st.subheader("Asignación de Mercados-Clientes a Clusters")
+            st.markdown("Edita los valores de **KILOS_ASIGNABLE** y **CLUSTER**. La columna **MERCADO-CLIENTE** no es editable.")
+            
+            # Configurar columnas editables
+            column_config_mc = {}
+            col_names_mc = st.session_state.ediciones_clusters_mc.columns.tolist()
+            max_cluster = len(clusters['clusters_summary'])
+            
+            for col in col_names_mc:
+                if col == "MERCADO-CLIENTE":
+                    column_config_mc[col] = st.column_config.TextColumn(
+                        col,
+                        disabled=True,
+                        help="Nombre del mercado-cliente (no editable)"
+                    )
+                elif col == "KILOS_ASIGNABLE":
+                    column_config_mc[col] = st.column_config.NumberColumn(
+                        col,
+                        format="%.2f",
+                        help="Kilos asignables (editable)"
+                    )
+                elif col == "CLUSTER":
+                    column_config_mc[col] = st.column_config.NumberColumn(
+                        col,
+                        min_value=1,
+                        max_value=max_cluster,
+                        step=1,
+                        help=f"Cluster asignado (1 a {max_cluster})"
+                    )
+                else:
+                    column_config_mc[col] = st.column_config.NumberColumn(
+                        col,
+                        format="%.2f",
+                        help=f"Columna {col}"
+                    )
+            
+            # Editor de datos
+            edited_mc = st.data_editor(
+                st.session_state.ediciones_clusters_mc,
+                column_config=column_config_mc,
+                use_container_width=True,
+                num_rows="fixed",
+                key="editor_clusters_mc"
+            )
+            
+            # Actualizar session state con ediciones
+            st.session_state.ediciones_clusters_mc = edited_mc
+            
+            # Botón de reset para esta tabla
+            col_reset2, col_space2 = st.columns([1, 3])
+            with col_reset2:
+                if st.button("🔄 Resetear Asignaciones", key="reset_mc"):
+                    st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
+                    st.success("✅ Asignaciones reseteadas a valores originales")
+                    st.rerun()
+        
+        st.markdown("---")
+        
+        # Sección de descarga
+        st.subheader("💾 Descargar Tablas Editadas")
+        
+        # Función para generar Excel con tablas editadas
+        def to_excel_bytes_edited():
+            """Convierte tablas editadas a Excel en memoria."""
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                # Tabla 1: Tolerancias Sugeridas Monotónicas Editadas
+                st.session_state.ediciones_tol_sug_mono.to_excel(
+                    writer, 
+                    sheet_name='Tol_Sug_Mono_Editada', 
+                    index=False
+                )
+                
+                # Tabla 2: Asignación de Clusters Editada
+                st.session_state.ediciones_clusters_mc.to_excel(
+                    writer, 
+                    sheet_name='ClustersMC_Editada', 
+                    index=False
+                )
+            
+            output.seek(0)
+            return output.getvalue()
+        
+        # Botón de descarga
+        excel_bytes_edited = to_excel_bytes_edited()
+        filename_edited = f"{resultados['especie'].replace(' ', '_')}_{resultados['linea_producto'].replace(' ', '_')}_Editadas.xlsx"
+        
+        st.download_button(
+            label="📥 Descargar Excel con Tablas Editadas",
+            data=excel_bytes_edited,
+            file_name=filename_edited,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            help="Descarga un archivo Excel con las dos tablas editadas: Tol_Sug_Mono_Editada y ClustersMC_Editada"
+        )
+        
+        # Botón de reset global (opcional)
+        st.markdown("---")
+        col_reset_global, col_space_global = st.columns([1, 4])
+        with col_reset_global:
+            if st.button("🔄 Resetear Todo a Valores Originales", type="secondary", key="reset_all"):
+                st.session_state.ediciones_tol_sug_mono = clusters['tol_sug_mono'].copy()
+                st.session_state.ediciones_clusters_mc = clusters['clusters_mc'].copy()
+                st.success("✅ Todas las ediciones han sido reseteadas")
+                st.rerun()
 
