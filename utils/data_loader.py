@@ -144,3 +144,6 @@ def load_data(especie: str, linea_producto: str = None, base_dir: Path = None):
         'cruce': cruce
     }
 
+
+
+

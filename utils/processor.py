@@ -57,3 +57,6 @@ def process_species_linea(especie: str, linea_producto: str, k=5, qmin=None, qma
         'linea_producto': linea_producto
     }
 
+
+
+
