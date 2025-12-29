@@ -34,3 +34,10 @@ __pycache__/
 
 
 
+.venv/
+*.env
+.streamlit/secrets.toml
+*.py.tmp.*
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
